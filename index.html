@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Link Stash | Ultimate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* --- 1. CORE SETUP --- */
+        :root {
+            --bg-dark: #050505;
+            --surface: #121212;
+            --surface-highlight: #1E1E1E;
+            --primary: #8AB4F8; /* Google Blue-ish */
+            --primary-glow: rgba(138, 180, 248, 0.4);
+            --danger: #FF6B6B;
+            --text-main: #E8EAED;
+            --text-sub: #9AA0A6;
+            --glass-bg: rgba(30, 30, 30, 0.7);
+            --border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 220px; /* Space for fixed bottom bar */
+        }
+        /* Empty State Styling */
+#empty-state {
+    display: none; /* Hidden by default, JS will toggle it */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-sub);
+    opacity: 0.7;
+}
+
+#empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: var(--primary);
+    opacity: 0.5;
+}
+
+#empty-state p {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-main);
+}
+
+#empty-state span {
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+        /* --- 2. HEADER AREA --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: rgba(5, 5, 5, 0.9);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            border-bottom: var(--border);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            background: linear-gradient(90deg, #8AB4F8, #C58AF9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .delete-all-btn {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .delete-all-btn:active { background: rgba(255, 107, 107, 0.1); transform: scale(0.95); }
+
+        /* --- 3. LIST AREA --- */
+        #list {
+            padding: 20px 24px;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        li {
+            background: var(--surface);
+            border: var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.2s, background 0.2s;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        li:active { transform: scale(0.98); background: var(--surface-highlight); }
+
+        /* Favicon Image */
+        .favicon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #222;
+        }
+
+        .link-info {
+            flex: 1;
+            min-width: 0; /* Prevents text overflow issues */
+            display: flex;
+            flex-direction: column;
+        }
+
+        a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-url {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 4px;
+        }
+
+        /* Action Buttons on List Item */
+        .actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 8px;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .icon-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .icon-btn.delete:hover { color: var(--danger); background: rgba(255, 107, 107, 0.1); }
+
+        /* --- 4. BOTTOM SHEET (INPUTS) --- */
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 24px;
+            border-top: var(--border);
+            z-index: 100;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px; /* Prevents iOS zoom */
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.6);
+            outline: none;
+        }
+
+        #save-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--primary-glow);
+            flex-shrink: 0;
+        }
+
+        #save-btn:active { transform: scale(0.95); }
+
+        /* --- 5. TOAST NOTIFICATION --- */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 50px;
+            padding: 16px;
+            position: fixed;
+            z-index: 200;
+            left: 50%;
+            bottom: 230px; /* Above bottom sheet */
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 240px;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Desktop Layout Tweaks */
+        @media (min-width: 768px) {
+            body { max-width: 600px; margin: 0 auto; border-left: var(--border); border-right: var(--border); }
+            .bottom-sheet { max-width: 600px; left: 50%; transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Link Stash</h1>
+        <button class="delete-all-btn" id="delete-btn">CLEAR ALL</button>
+    </div>
+    <ul id="list">
+    <div id="empty-state">
+        <i class="fas fa-wind"></i>
+        <p>It's quiet in here...</p>
+        <span>Add a link below to get started!</span>
+    </div>
+    </ul>
+    <ul id="list"></ul>
+
+    <div class="bottom-sheet">
+        <input type="text" id="site-name" placeholder="Title (e.g. Design Inspiration)">
+        <div class="input-row">
+            <input type="text" id="site-url" placeholder="Paste URL here...">
+            <button id="save-btn"><i class="fas fa-arrow-up"></i></button>
+        </div>
+    </div>
+
+    <div id="toast">Link Saved Successfully!</div>
+
+    <script>
+        let myLeads = [];
+        const inputName = document.querySelector("#site-name");
+        const inputUrl = document.querySelector("#site-url");
+        const saveBtn = document.querySelector("#save-btn");
+        const deleteBtn = document.querySelector("#delete-btn");
+        const listEl = document.querySelector("#list");
+        const toast = document.querySelector("#toast");
+
+        // Helper: Show Toast
+        function showToast(message) {
+            toast.textContent = message;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        // Helper: Get Domain for Favicon
+        function getDomain(url) {
+            try {
+                const domain = new URL(url);
+                return domain.hostname;
+            } catch {
+                return '';
+            }
+        }
+
+        function formatURL(url) {
+            if (!/^https?:\/\//i.test(url)) {
+                return 'https://' + url;
+            }
+            return url;
+        }
+
+        // Load from Storage
+        const leadsFromLocalStorage = JSON.parse(localStorage.getItem("myLeads"));
+        if(leadsFromLocalStorage){
+            myLeads = leadsFromLocalStorage;
+            render(myLeads);
+        }
+
+        function render(leads) {
+    let listItems = "";
+    
+    // CHECK: Is the list empty?
+    if (leads.length === 0) {
+        // Show the Empty State (by injecting it directly or toggling display)
+        listEl.innerHTML = `
+            <div id="empty-state" style="display: flex;">
+                <i class="fas fa-layer-group"></i>
+                <p>No links stashed yet.</p>
+                <span>Paste a URL below to save it forever.</span>
+            </div>
+        `;
+        return; // Stop the function here
+    }
+
+    // If we have leads, loop through them as normal
+    leads.forEach((lead, index) => {
+        const href = formatURL(lead.url);
+        const domain = getDomain(href);
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+        listItems += `
+        <li>
+            <img src="${faviconUrl}" class="favicon" alt="icon">
+            <div class="link-info">
+                <a href="${href}" target="_blank" rel="noopener noreferrer">
+                    ${lead.name}
+                </a>
+                <div class="link-url">${href}</div>
+            </div>
+            <div class="actions">
+                <button class="icon-btn" onclick="copyToClipboard('${href}')">
+                    <i class="far fa-copy"></i>
+                </button>
+                <button class="icon-btn delete" onclick="deleteLead(${index})">
+                    <i class="far fa-trash-alt"></i>
+                </button>
+            </div>
+        </li> `;
+    })
+    
+    listEl.innerHTML = listItems;
+}
+
+        // Save Lead
+        saveBtn.addEventListener("click", function(){
+            const rawUrl = inputUrl.value.trim();
+            if (!rawUrl) return; 
+            
+            const formatted = formatURL(rawUrl);
+            const name = inputName.value.trim() || rawUrl;
+
+            const newLead = { name: name, url: formatted }
+
+            myLeads.unshift(newLead); // Add to top of list
+            inputName.value = "";
+            inputUrl.value = "";
+
+            localStorage.setItem("myLeads", JSON.stringify(myLeads));
+            render(myLeads);
+            showToast("Link Saved!");
+        })
+
+        // Delete All
+        deleteBtn.addEventListener("click", function() {
+            if(myLeads.length > 0 && confirm("Are you sure you want to delete all links?")) {
+                localStorage.clear();
+                myLeads = [];
+                render(myLeads);
+                showToast("All links deleted.");
+            }
+        });
+
+        // Delete Single Lead (Exposed to window for onclick in HTML)
+        window.deleteLead = function(index) {
+            myLeads.splice(index, 1);
+            localStorage.setItem("myLeads", JSON.stringify(myLeads));
+            render(myLeads);
+            showToast("Link removed.");
+        }
+
+        // Copy to Clipboard (Exposed to window)
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("URL Copied to Clipboard!");
+            });
+        }
+    </script>
+</body>
+</html>
