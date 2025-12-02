@@ -32,8 +32,8 @@ This is a small, simple link saver I made. It's beginner-friendly and works righ
 
 ## Screenshots
 
-- !(linkstashlpimg.png)
-- !(image.png)
+- ![Image](linkstashlpimg.png)
+- ![Image](image.png)
 
 
 Built with curiosity and a pinch of code — stash links, spark ideas.
